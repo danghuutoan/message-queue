@@ -34,7 +34,7 @@ $(OUTPUT)/%.o:%.c
 
 $(PRJ): $(OBJECTS)
 	mkdir -p $(@D)
-	$(LD) $(CFLAGS) -o $(OUTPUT)/$@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $(OUTPUT)/$@ $^ $(LDFLAGS)
 
 
 VPATH +=:.

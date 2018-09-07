@@ -5,21 +5,25 @@
 #include <string.h>
 #include "queue.h"
 
-queue_t *queue_create(uint8_t size)
+queue_t *queue_create(queue_t *queue)
 {
-	queue_t * new_queue = malloc(sizeof(queue_t));
-	new_queue->tail = NULL;
-	new_queue->head = NULL;
-	new_queue->size = size;
-	new_queue->length = 0;
-	pthread_mutex_init(&new_queue->mutex, NULL);
-	return new_queue;
+	queue->tail = NULL;
+	queue->head = NULL;
+	queue->length = 0;
+	pthread_mutex_init(&queue->mutex, NULL);
+	return queue;
 }
 
 queue_t *queue_send(queue_t *queue, void *data, int priority)
 {
-	pthread_mutex_lock(&queue->mutex); /* lock a mutex */
+	pthread_mutex_lock(&queue->mutex); /* lock the queue mutex */
 	node_t *new_node = malloc(sizeof(node_t));
+
+	if(queue->length >= queue->high_water_mark)
+	{
+		queue->high_water_mark_clbk(queue);
+	}
+
 	if(new_node){
 		new_node->data = data;
 		new_node->next = queue->head;
@@ -29,7 +33,7 @@ queue_t *queue_send(queue_t *queue, void *data, int priority)
 	} else {
 		return NULL;
 	}
-	pthread_mutex_unlock(&queue->mutex); /* release a mutex */
+	pthread_mutex_unlock(&queue->mutex); /* release the queue mutex */
 	return queue;
 }
 
@@ -38,7 +42,7 @@ void *queue_get(queue_t *queue)
 {
 	int min = QUEUE_MAX_PRIORITIES;
 	void *ret_val = NULL;
-	pthread_mutex_lock(&queue->mutex); /* lock a mutex */
+	pthread_mutex_lock(&queue->mutex); /* lock the queue mutex */
 	node_t *return_element = NULL;
 	node_t *prev_element = NULL;
 	node_t *element = queue->head;
@@ -71,6 +75,10 @@ void *queue_get(queue_t *queue)
 		free(return_element);
 	}
 
-	pthread_mutex_unlock(&queue->mutex); /* release a mutex */
+	if(queue->length <= queue->low_water_mark)
+	{
+		queue->low_water_mark_clbk(queue);
+	}
+	pthread_mutex_unlock(&queue->mutex); /* release the queue mutex */
 	return ret_val;
 }

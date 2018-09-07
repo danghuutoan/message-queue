@@ -20,8 +20,12 @@ typedef struct queue
 	uint8_t size;
 	uint8_t length;
 	pthread_mutex_t mutex;
+	uint8_t high_water_mark;
+	uint8_t low_water_mark;
+	void (*high_water_mark_clbk)(void *queue);
+	void (*low_water_mark_clbk)(void *queue);
 } queue_t;
 
-queue_t *queue_create(uint8_t size);
+queue_t *queue_create(queue_t *queue);
 queue_t *queue_send(queue_t *queue, void *data, int priority);
 void *queue_get(queue_t *queue);
