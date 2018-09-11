@@ -11,28 +11,21 @@
 #include <semaphore.h>
 #endif
 
-char *test1 ="hello1";
-char *test2 ="hello2";
-
 dispatch_semaphore_t empty;
 queue_t my_queue;
 void high_water_mark_evt(void *queue)
 {
-	// (void) queue;
+
 	// sem_wait(&empty);
-	// long ret = 1;
-	// printf("high_water_mark_evt\n");
 	pthread_mutex_unlock(&((queue_t *)queue)->mutex); /* release the queue mutex */
 	dispatch_semaphore_wait(empty, DISPATCH_TIME_FOREVER);
 	pthread_mutex_lock(&((queue_t *)queue)->mutex); /* lock the queue mutex */
-	// printf("high_water_mark_evt return\n");
 }
 
 void low_water_mark_evt(void *queue)
 {
 	(void) queue;
 	// sem_post(&empty);
-	// printf("low_water_mark_evt length %d\n", ((queue_t *)queue)->length);
 	dispatch_semaphore_signal(empty);
 }
 
@@ -46,9 +39,7 @@ void *producer(void *vargp)
 	for(int i = 0; i < 1000; i ++){
 		buffer = malloc(sizeof(char) * 50);
     	sprintf(buffer, "task %d %d ", thread_id, i);
-    	// printf("sending %s \r\n", buffer);
-    	queue_send(&my_queue, (void *)buffer, 0);
-    	// sleep(1);
+    	queue_send(&my_queue, (void *)buffer, thread_id);
 	}
     return NULL;
 }
@@ -58,11 +49,12 @@ void *consumer(void *vargp)
 {
 	//resolve the unused variable
 	(void)vargp;
+	int thread_id =  *(int *)vargp;
 	uint8_t *data;
 	while(1){
 		data = (uint8_t *)queue_get(&my_queue);
 		if(data != NULL){
-    		printf("received %s \r\n", data);
+    		printf("task %d:received %s \n",thread_id, data);
     		// sleep(1);
     		free(data);
 	    } else {
@@ -90,7 +82,14 @@ void test_thread_safe(void)
 		*arg = i; 
     	pthread_create(&producer_thread_id, NULL, producer, arg);
     }
-    pthread_create(&consumer_thread_id, NULL, consumer, NULL);
+
+    for (int i = 0; i < 2; ++i)
+    {
+    	int *arg = malloc(sizeof(int));
+		*arg = i;
+    	pthread_create(&consumer_thread_id, NULL, consumer, arg);
+    }
+
     pthread_join(producer_thread_id, NULL);
     pthread_join(consumer_thread_id, NULL);
 }
@@ -113,7 +112,13 @@ void test_high_water_mark(void)
 		*arg = i; 
     	pthread_create(&producer_thread_id, NULL, producer, arg);
     }
-    pthread_create(&consumer_thread_id, NULL, consumer, NULL);
+
+    for (int i = 0; i < 10; ++i)
+    {
+    	int *arg = malloc(sizeof(int));
+		*arg = i;
+    	pthread_create(&consumer_thread_id, NULL, consumer, arg);
+    }
     pthread_join(producer_thread_id, NULL);
     pthread_join(consumer_thread_id, NULL);
 
