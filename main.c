@@ -4,29 +4,44 @@
 #include <unistd.h> // for sleep()
 #include <string.h>
 #include "queue.h"
+#include <stdint.h>
 // #include <semaphore.h>
 #ifdef __APPLE__
 #include <dispatch/dispatch.h>
 #else
 #include <semaphore.h>
 #endif
-
+#ifdef __APPLE__
 dispatch_semaphore_t empty;
+#else
+sem_t empty;
+#endif
+
 queue_t my_queue;
 void high_water_mark_evt(void *queue)
 {
 
 	// sem_wait(&empty);
 	pthread_mutex_unlock(&((queue_t *)queue)->mutex); /* release the queue mutex */
+#ifdef __APPLE__
 	dispatch_semaphore_wait(empty, DISPATCH_TIME_FOREVER);
+#else
+	sem_wait(&empty);
+#endif
+
 	pthread_mutex_lock(&((queue_t *)queue)->mutex); /* lock the queue mutex */
 }
 
 void low_water_mark_evt(void *queue)
 {
 	(void) queue;
+#ifdef __APPLE__
 	// sem_post(&empty);
 	dispatch_semaphore_signal(empty);
+#else
+	sem_post(&empty);
+#endif
+
 }
 
 void *producer(void *vargp)
@@ -99,7 +114,11 @@ void test_high_water_mark(void)
     pthread_t producer_thread_id;
     pthread_t consumer_thread_id;
     // sem_init(&empty, 0, 0);
+#ifdef __APPLE__
     empty = dispatch_semaphore_create(1);
+#else
+	sem_init(&empty, 0,0);
+#endif
     my_queue.size = 10;
    	my_queue.high_water_mark = 9;
 	my_queue.low_water_mark = 1;

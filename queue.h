@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <unistd.h> // for sleep()
 #include <string.h>
-
+#include <stdint.h>
 
 #define QUEUE_MAX_PRIORITIES 0xFF
 typedef struct node

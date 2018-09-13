@@ -42,7 +42,7 @@ VPATH +=:.
 CFLAGS+=-MD -MP
 CFLAGS+=$(patsubst %,-I%,$(INC))
 CFLAGS+= -std=gnu99 -Wextra -Wall -Werror
-LDFLAGS :=
+LDFLAGS := -pthread
 -include $(OBJECTS:.o=.d)
 
 clean:
