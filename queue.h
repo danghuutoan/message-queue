@@ -27,5 +27,9 @@ typedef struct queue
 } queue_t;
 
 queue_t *queue_create(queue_t *queue);
+void queue_delete(queue_t *queue);
 queue_t *queue_send(queue_t *queue, void *data, int priority);
 void *queue_get(queue_t *queue);
+
+void queue_set_high_water_mark(queue_t *queue, uint8_t value);
+void queue_set_low_water_mark(queue_t *queue, uint8_t value);

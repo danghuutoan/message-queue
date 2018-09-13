@@ -11,8 +11,8 @@ $(shell mkdir -p $(OUTPUT))
 
 PRJ :=  $(notdir $(current_dir))
 SRCS += main.c
-SRCS += queue.c
-INC +=.
+SRCS += ../queue.c
+INC +=../
 
 
 LIBDIR+=
@@ -47,6 +47,6 @@ LDFLAGS := -pthread
 
 clean:
 	$(RM) $(OUTPUT)/$(PRJ)
-	$(RM) $(OUTPUT)/*.o $(OUTPUT)/*.d $(OUTPUT)/$(PRJ)
+	$(RM) $(OUTPUT)/*.o $(OUTPUT)/*.d $(OUTPUT)/$(PRJ) *.o *.d
 
 .PHONY: all clean

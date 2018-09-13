@@ -5,24 +5,45 @@
 #include <string.h>
 #include "queue.h"
 
+
+
 queue_t *queue_create(queue_t *queue)
 {
 	queue->tail = NULL;
 	queue->head = NULL;
 	queue->length = 0;
+	queue->high_water_mark = queue->size;
+	queue->low_water_mark = 0;
 	pthread_mutex_init(&queue->mutex, NULL);
 	return queue;
 }
 
+void queue_delete(queue_t *queue)
+{
+	queue->tail = NULL;
+	queue->head = NULL;
+	queue->length = 0;
+	pthread_mutex_destroy(&queue->mutex);
+}
 queue_t *queue_send(queue_t *queue, void *data, int priority)
 {
+	queue_t *ret_val = NULL;
 	pthread_mutex_lock(&queue->mutex); /* lock the queue mutex */
-	node_t *new_node = malloc(sizeof(node_t));
-
 	if(queue->length >= queue->high_water_mark)
 	{
-		queue->high_water_mark_clbk(queue);
+		if(queue->high_water_mark_clbk)
+		{
+			queue->high_water_mark_clbk(queue);
+		}
 	}
+
+	if(queue->length >= queue->size )
+	{
+		ret_val = NULL;
+		goto exit;
+	}
+
+	node_t *new_node = malloc(sizeof(node_t));
 
 	if(new_node){
 		new_node->data = data;
@@ -30,17 +51,22 @@ queue_t *queue_send(queue_t *queue, void *data, int priority)
 		new_node->priority = priority;
 		queue->head = new_node;
 		queue->length++;
+		ret_val = queue;
+		goto exit;
 	} else {
-		return NULL;
+		ret_val = NULL;
+		goto exit;
 	}
+
+exit:
 	pthread_mutex_unlock(&queue->mutex); /* release the queue mutex */
-	return queue;
+	return ret_val;
 }
 
 
 void *queue_get(queue_t *queue)
 {
-	int min = QUEUE_MAX_PRIORITIES;
+	int max = 0;
 	void *ret_val = NULL;
 	pthread_mutex_lock(&queue->mutex); /* lock the queue mutex */
 	node_t *return_element = NULL;
@@ -51,8 +77,8 @@ void *queue_get(queue_t *queue)
 
 	while(element != NULL){
 		// find the highest priority element
-		if(min > element->priority){
-			min = element->priority;
+		if(max <= element->priority){
+			max = element->priority;
 			return_element = element;
 			ret_val = (void *)element->data;
 			prev_min = prev_element;
@@ -77,8 +103,28 @@ void *queue_get(queue_t *queue)
 
 	if(queue->length <= queue->low_water_mark)
 	{
-		queue->low_water_mark_clbk(queue);
+		if(queue->low_water_mark_clbk)
+		{
+			queue->low_water_mark_clbk(queue);
+		}
 	}
 	pthread_mutex_unlock(&queue->mutex); /* release the queue mutex */
 	return ret_val;
+}
+
+void queue_set_high_water_mark(queue_t *queue, uint8_t value)
+{
+	if(value > queue->size)
+	{
+		queue->high_water_mark = queue->size;
+	}
+	else
+	{
+		queue->high_water_mark = value;
+	}
+}
+
+void queue_set_low_water_mark(queue_t *queue, uint8_t value)
+{
+	queue->low_water_mark = value;
 }

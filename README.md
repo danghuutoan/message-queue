@@ -1,7 +1,13 @@
 # message-queue
 a simple Implementation of a message queue
 # Features
+- thread safe
+- low/high water mark event
+# how to build sample application
 
-# Install
-## requirent
+```bash
+	cd test
+ 	make
+ 	./output/test
+```
 
